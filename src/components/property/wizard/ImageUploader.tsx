@@ -6,9 +6,10 @@ interface ImageUploaderProps {
   images: LocalPropertyImage[]
   onImagesChange: (images: LocalPropertyImage[]) => void
   maxImages?: number
+  onSetPrimary?: (imageId: string) => void
 }
 
-export default function ImageUploader({ images, onImagesChange, maxImages = 20 }: ImageUploaderProps) {
+export default function ImageUploader({ images, onImagesChange, maxImages = 20, onSetPrimary }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragItem = useRef<number | null>(null)
   const dragOverItem = useRef<number | null>(null)
@@ -61,12 +62,18 @@ export default function ImageUploader({ images, onImagesChange, maxImages = 20 }
   }, [images, onImagesChange])
 
   const handleSetPrimary = useCallback((imageId: string) => {
+    // If external handler is provided (edit mode), use it
+    if (onSetPrimary) {
+      onSetPrimary(imageId)
+      return
+    }
+    // Otherwise, handle internally
     const newImages = images.map(img => ({
       ...img,
       is_primary: img.id === imageId,
     }))
     onImagesChange(newImages)
-  }, [images, onImagesChange])
+  }, [images, onImagesChange, onSetPrimary])
 
   const handleCaptionChange = useCallback((imageId: string, caption: string) => {
     const newImages = images.map(img =>

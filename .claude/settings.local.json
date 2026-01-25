@@ -18,7 +18,9 @@
       "Bash(tree:*)",
       "Bash(grep:*)",
       "mcp__supabase__generate_typescript_types",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Plus, Building2, Eye, Pencil, Trash2, EyeOff, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react'
+import { Plus, Building2, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import AssetWizardModal from '../components/property/wizard/AssetWizardModal'
+import AssetViewModal from '../components/property/view/AssetViewModal'
 
 interface PropertyWithImage {
   id: string
@@ -45,6 +46,9 @@ const STATUS_STYLES: Record<string, string> = {
 export default function Assets() {
   const { activeOrg } = useAuth()
   const [isWizardOpen, setIsWizardOpen] = useState(false)
+  const [editAssetId, setEditAssetId] = useState<string | null>(null)
+  const [viewAssetId, setViewAssetId] = useState<string | null>(null)
+  const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null)
   const [assets, setAssets] = useState<PropertyWithImage[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
@@ -130,8 +134,53 @@ export default function Assets() {
     fetchAssets()
   }
 
-  const handleAction = (action: string, _assetId: string) => {
-    alert(`"${action}" feature coming soon!`)
+  const handleToggleStatus = async (assetId: string) => {
+    const asset = assets.find(a => a.id === assetId)
+    if (!asset) return
+
+    const newStatus = asset.status === 'active' ? 'draft' : 'active'
+
+    // Optimistic update
+    setAssets(prev =>
+      prev.map(a => (a.id === assetId ? { ...a, status: newStatus } : a))
+    )
+
+    const { error } = await supabase
+      .from('properties')
+      .update({ status: newStatus })
+      .eq('id', assetId)
+
+    if (error) {
+      console.error('Error updating asset status:', error)
+      // Revert on error
+      setAssets(prev =>
+        prev.map(a => (a.id === assetId ? { ...a, status: asset.status } : a))
+      )
+    }
+  }
+
+  const handleAction = (action: string, assetId: string) => {
+    if (action === 'View') {
+      setViewAssetId(assetId)
+    } else if (action === 'Edit') {
+      setEditAssetId(assetId)
+    } else if (action === 'Toggle visibility') {
+      handleToggleStatus(assetId)
+    } else if (action === 'Delete') {
+      setDeleteAssetId(assetId)
+    } else {
+      alert(`"${action}" feature coming soon!`)
+    }
+  }
+
+  const handleConfirmDelete = () => {
+    alert('Delete function coming soon - We need to work out the implications')
+    setDeleteAssetId(null)
+  }
+
+  const handleEditSuccess = () => {
+    setEditAssetId(null)
+    fetchAssets()
   }
 
   const getImageUrl = (storagePath: string) => {
@@ -301,12 +350,20 @@ export default function Assets() {
                       </button>
                       <button
                         type="button"
+                        role="switch"
+                        aria-checked={asset.status === 'active'}
                         onClick={() => handleAction('Toggle visibility', asset.id)}
                         disabled={!canManageAssets}
-                        className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                        title={asset.status === 'active' ? 'Archive asset' : 'Activate asset'}
+                        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          asset.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                        title={asset.status === 'active' ? 'Set to Draft' : 'Set to Active'}
                       >
-                        <EyeOff className="h-4 w-4" />
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            asset.status === 'active' ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
                       </button>
                       <button
                         type="button"
@@ -358,12 +415,58 @@ export default function Assets() {
         </div>
       )}
 
-      {/* Asset Wizard Modal */}
+      {/* Asset Wizard Modal (Create Mode) */}
       <AssetWizardModal
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
         onSuccess={handleWizardSuccess}
+        mode="create"
       />
+
+      {/* Asset Wizard Modal (Edit Mode) */}
+      <AssetWizardModal
+        isOpen={editAssetId !== null}
+        onClose={() => setEditAssetId(null)}
+        onSuccess={handleEditSuccess}
+        mode="edit"
+        assetId={editAssetId}
+      />
+
+      {/* Asset View Modal */}
+      <AssetViewModal
+        isOpen={viewAssetId !== null}
+        assetId={viewAssetId}
+        onClose={() => setViewAssetId(null)}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      {deleteAssetId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setDeleteAssetId(null)} />
+          <div className="relative z-50 w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-lg">
+            <h2 className="text-lg font-semibold mb-2">Delete Asset</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Are you sure you want to delete this asset? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteAssetId(null)}
+                className="flex-1 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

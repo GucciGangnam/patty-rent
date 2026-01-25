@@ -103,6 +103,17 @@ export interface PropertyImage {
   created_at: string
 }
 
+// Existing image for edit mode (with URL for display)
+export interface ExistingPropertyImage {
+  id: string
+  storage_path: string
+  display_order: number
+  is_primary: boolean
+  caption: string
+  url: string
+  markedForDeletion?: boolean
+}
+
 // Main property interface
 export interface Property {
   id: string
@@ -153,6 +164,7 @@ export interface Property {
   // Timestamps
   created_at: string
   updated_at: string
+  updated_by?: string
 }
 
 // Form data for the wizard (all fields optional for draft state)

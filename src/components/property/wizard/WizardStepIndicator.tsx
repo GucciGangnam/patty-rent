@@ -4,9 +4,10 @@ import { WIZARD_STEPS, type WizardStep } from '../../../types/property'
 interface WizardStepIndicatorProps {
   currentStep: WizardStep
   onStepClick?: (step: WizardStep) => void
+  allClickable?: boolean
 }
 
-export default function WizardStepIndicator({ currentStep, onStepClick }: WizardStepIndicatorProps) {
+export default function WizardStepIndicator({ currentStep, onStepClick, allClickable }: WizardStepIndicatorProps) {
   const currentIndex = WIZARD_STEPS.findIndex(s => s.id === currentStep)
 
   return (
@@ -15,7 +16,7 @@ export default function WizardStepIndicator({ currentStep, onStepClick }: Wizard
         {WIZARD_STEPS.map((step, index) => {
           const isCompleted = index < currentIndex
           const isCurrent = index === currentIndex
-          const isClickable = isCompleted && onStepClick
+          const isClickable = (isCompleted || allClickable) && onStepClick && !isCurrent
 
           return (
             <li key={step.id} className="flex-1 relative">
@@ -52,9 +53,11 @@ export default function WizardStepIndicator({ currentStep, onStepClick }: Wizard
                       ? 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
                       : isCurrent
                         ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
+                        : allClickable
+                          ? 'bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80'
+                          : 'bg-muted text-muted-foreground'
                     }
-                    ${!isClickable ? 'cursor-default' : ''}
+                    ${!isClickable && !isCurrent ? 'cursor-default' : ''}
                   `}
                 >
                   {isCompleted ? (

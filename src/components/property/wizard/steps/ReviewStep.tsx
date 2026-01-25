@@ -1,6 +1,7 @@
 import { FileText, Image, MapPin, LayoutGrid, DollarSign, Sparkles, ClipboardList } from 'lucide-react'
 import {
   type PropertyFormData,
+  type ExistingPropertyImage,
   PROPERTY_TYPE_LABELS,
   FURNISHED_LABELS,
   YES_NO_UNSPECIFIED_LABELS,
@@ -10,9 +11,10 @@ import {
 interface ReviewStepProps {
   formData: PropertyFormData
   updateFormData: (updates: Partial<PropertyFormData>) => void
+  existingImages?: ExistingPropertyImage[]
 }
 
-export default function ReviewStep({ formData, updateFormData }: ReviewStepProps) {
+export default function ReviewStep({ formData, updateFormData, existingImages = [] }: ReviewStepProps) {
   // Build location string
   const locationParts = [
     formData.address_line_1,
@@ -94,26 +96,36 @@ export default function ReviewStep({ formData, updateFormData }: ReviewStepProps
         <div className="space-y-4">
           {/* Media */}
           <SummarySection icon={Image} label="Media">
-            {formData.images.length > 0 ? (
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {formData.images.slice(0, 4).map((img, i) => (
-                    <img
-                      key={img.id}
-                      src={img.preview}
-                      alt=""
-                      className="h-8 w-8 rounded object-cover border-2 border-background"
-                      style={{ zIndex: 4 - i }}
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {formData.images.length} image{formData.images.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            ) : (
-              <span className="text-muted-foreground">No images added</span>
-            )}
+            {(() => {
+              const activeExisting = existingImages.filter(img => !img.markedForDeletion)
+              const totalImages = activeExisting.length + formData.images.length
+              const allPreviews = [
+                ...activeExisting.map(img => ({ id: img.id, src: img.url })),
+                ...formData.images.map(img => ({ id: img.id, src: img.preview })),
+              ]
+
+              if (totalImages > 0) {
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2">
+                      {allPreviews.slice(0, 4).map((img, i) => (
+                        <img
+                          key={img.id}
+                          src={img.src}
+                          alt=""
+                          className="h-8 w-8 rounded object-cover border-2 border-background"
+                          style={{ zIndex: 4 - i }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {totalImages} image{totalImages !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )
+              }
+              return <span className="text-muted-foreground">No images added</span>
+            })()}
           </SummarySection>
 
           {/* Location */}
