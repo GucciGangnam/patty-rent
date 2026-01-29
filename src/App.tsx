@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { SearchProvider } from './contexts/SearchContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/AppLayout'
 import Landing from './pages/Landing'
@@ -14,6 +15,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <SearchProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -25,6 +27,7 @@ function App() {
             <Route path="/assets" element={<Assets />} />
           </Route>
         </Routes>
+        </SearchProvider>
       </AuthProvider>
     </BrowserRouter>
   )

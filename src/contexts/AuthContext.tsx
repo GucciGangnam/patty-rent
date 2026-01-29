@@ -17,6 +17,8 @@ interface Organisation {
   id: string
   name: string
   created_at: string
+  avatar_url: string | null
+  currency_code: string
 }
 
 interface Membership {
@@ -143,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             organisation_id,
             role,
             is_owner,
-            organisation:organisations(id, name, created_at)
+            organisation:organisations(id, name, created_at, avatar_url, currency_code)
           `)
           .eq('user_id', userId),
         supabase
@@ -236,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         organisation_id,
         role,
         is_owner,
-        organisation:organisations(id, name, created_at)
+        organisation:organisations(id, name, created_at, avatar_url, currency_code)
       `)
       .eq('user_id', userId)
 
@@ -263,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const hasChanges =
             activeOrg.organisation.id !== currentMembership.organisation.id ||
             activeOrg.organisation.name !== currentMembership.organisation.name ||
+            activeOrg.organisation.currency_code !== currentMembership.organisation.currency_code ||
             activeOrg.role !== currentMembership.role ||
             activeOrg.is_owner !== currentMembership.is_owner
 

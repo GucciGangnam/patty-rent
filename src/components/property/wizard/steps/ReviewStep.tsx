@@ -1,4 +1,4 @@
-import { FileText, Image, MapPin, LayoutGrid, DollarSign, Sparkles, ClipboardList } from 'lucide-react'
+import { FileText, Image, MapPin, LayoutGrid, DollarSign, Sparkles, ClipboardList, User } from 'lucide-react'
 import {
   type PropertyFormData,
   type ExistingPropertyImage,
@@ -7,18 +7,21 @@ import {
   YES_NO_UNSPECIFIED_LABELS,
   AMENITIES,
 } from '../../../../types/property'
+import { formatCurrency } from '../../../../lib/currency'
 
 interface ReviewStepProps {
   formData: PropertyFormData
   updateFormData: (updates: Partial<PropertyFormData>) => void
   existingImages?: ExistingPropertyImage[]
+  currencyCode?: string
 }
 
-export default function ReviewStep({ formData, updateFormData, existingImages = [] }: ReviewStepProps) {
+export default function ReviewStep({ formData, updateFormData, existingImages = [], currencyCode = 'AUD' }: ReviewStepProps) {
   // Build location string
   const locationParts = [
     formData.address_line_1,
     formData.address_line_2,
+    formData.suburb,
     formData.city,
     formData.state,
     formData.postcode,
@@ -26,16 +29,10 @@ export default function ReviewStep({ formData, updateFormData, existingImages = 
   ].filter(Boolean)
   const locationString = locationParts.join(', ') || 'Not specified'
 
-  // Get amenity labels
-  const selectedAmenities = formData.amenities
-    .map(id => AMENITIES.find(a => a.id === id)?.label)
-    .filter(Boolean)
-
-  // Format currency
-  const formatCurrency = (value: string) => {
-    if (!value) return null
-    return `$${parseFloat(value).toLocaleString()}`
-  }
+  // Get amenity labels for selected amenities
+  const selectedAmenities = AMENITIES
+    .filter(amenity => formData.amenities[amenity.id] === true)
+    .map(amenity => amenity.label)
 
   return (
     <div className="space-y-6">
@@ -153,6 +150,9 @@ export default function ReviewStep({ formData, updateFormData, existingImages = 
                   {formData.furnished && (
                     <span className="text-muted-foreground">• {FURNISHED_LABELS[formData.furnished]}</span>
                   )}
+                  {formData.elevator === true && (
+                    <span className="text-muted-foreground">• Elevator</span>
+                  )}
                 </div>
               )}
               {formData.rooms.length > 0 && (
@@ -160,7 +160,7 @@ export default function ReviewStep({ formData, updateFormData, existingImages = 
                   {formData.rooms.length} detailed room{formData.rooms.length !== 1 ? 's' : ''} added
                 </div>
               )}
-              {!formData.bedrooms && !formData.bathrooms && !formData.parking_spaces && !formData.property_type && formData.rooms.length === 0 && (
+              {!formData.bedrooms && !formData.bathrooms && !formData.parking_spaces && !formData.property_type && formData.elevator === null && formData.rooms.length === 0 && (
                 <span className="text-muted-foreground">Not specified</span>
               )}
             </div>
@@ -171,14 +171,14 @@ export default function ReviewStep({ formData, updateFormData, existingImages = 
             <div className="space-y-1">
               {(formData.rent_weekly || formData.rent_monthly) && (
                 <div className="flex gap-3 text-sm">
-                  {formData.rent_weekly && <span>{formatCurrency(formData.rent_weekly)}/week</span>}
+                  {formData.rent_weekly && <span>{formatCurrency(formData.rent_weekly, currencyCode)}/week</span>}
                   {formData.rent_monthly && (
-                    <span className="text-muted-foreground">({formatCurrency(formData.rent_monthly)}/month)</span>
+                    <span className="text-muted-foreground">({formatCurrency(formData.rent_monthly, currencyCode)}/month)</span>
                   )}
                 </div>
               )}
               {formData.bond && (
-                <div className="text-sm">Bond: {formatCurrency(formData.bond)}</div>
+                <div className="text-sm">Bond: {formatCurrency(formData.bond, currencyCode)}</div>
               )}
               {formData.available_from && (
                 <div className="text-sm text-muted-foreground">
@@ -233,6 +233,23 @@ export default function ReviewStep({ formData, updateFormData, existingImages = 
                 </div>
               )}
               {!formData.max_occupants && !formData.pets_allowed && !formData.smokers_allowed && (
+                <span className="text-muted-foreground">Not specified</span>
+              )}
+            </div>
+          </SummarySection>
+
+          {/* Landlord */}
+          <SummarySection icon={User} label="Landlord">
+            <div className="space-y-1">
+              {formData.landlord_name && (
+                <div className="text-sm">{formData.landlord_name}</div>
+              )}
+              {formData.landlord_contact_number && (
+                <div className="text-sm text-muted-foreground">
+                  {formData.landlord_contact_number}
+                </div>
+              )}
+              {!formData.landlord_name && !formData.landlord_contact_number && (
                 <span className="text-muted-foreground">Not specified</span>
               )}
             </div>

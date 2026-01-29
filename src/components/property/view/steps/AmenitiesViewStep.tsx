@@ -1,5 +1,5 @@
 import { Sparkles, Check } from 'lucide-react'
-import { AMENITIES } from '../../../../types/property'
+import { AMENITIES, type AmenityKey } from '../../../../types/property'
 import type { AssetViewData } from '../AssetViewModal'
 
 interface AmenitiesViewStepProps {
@@ -13,7 +13,7 @@ const groupedAmenities = AMENITIES.reduce((acc, amenity) => {
   }
   acc[amenity.category].push(amenity)
   return acc
-}, {} as Record<string, typeof AMENITIES[number][]>)
+}, {} as Record<string, typeof AMENITIES>)
 
 const categoryLabels: Record<string, string> = {
   climate: 'Climate Control',
@@ -39,8 +39,16 @@ const categoryOrder = [
   'utilities',
 ]
 
+// Helper to check if an amenity is selected from the data
+function isAmenitySelected(data: AssetViewData, amenityId: AmenityKey): boolean {
+  const key = `amenity_${amenityId}` as keyof AssetViewData
+  return data[key] === true
+}
+
 export default function AmenitiesViewStep({ data }: AmenitiesViewStepProps) {
-  const hasAmenities = data.amenities.length > 0
+  // Count selected amenities
+  const selectedCount = AMENITIES.filter(a => isAmenitySelected(data, a.id)).length
+  const hasAmenities = selectedCount > 0
 
   return (
     <div className="space-y-6">
@@ -51,7 +59,7 @@ export default function AmenitiesViewStep({ data }: AmenitiesViewStepProps) {
         </div>
         {hasAmenities && (
           <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-            {data.amenities.length} selected
+            {selectedCount} selected
           </span>
         )}
       </div>
@@ -68,7 +76,7 @@ export default function AmenitiesViewStep({ data }: AmenitiesViewStepProps) {
             if (!amenities) return null
 
             // Filter to only show selected amenities in this category
-            const selectedInCategory = amenities.filter(a => data.amenities.includes(a.id))
+            const selectedInCategory = amenities.filter(a => isAmenitySelected(data, a.id))
             if (selectedInCategory.length === 0) return null
 
             return (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Building2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
+import { getCurrencySymbol } from '../../../lib/currency'
 import WizardStepIndicator from './WizardStepIndicator'
 import MediaStep from './steps/MediaStep'
 import LocationStep from './steps/LocationStep'
@@ -9,6 +10,7 @@ import RoomsStep from './steps/RoomsStep'
 import RentalTermsStep from './steps/RentalTermsStep'
 import AmenitiesStep from './steps/AmenitiesStep'
 import RulesStep from './steps/RulesStep'
+import LandlordStep from './steps/LandlordStep'
 import ReviewStep from './steps/ReviewStep'
 import {
   WIZARD_STEPS,
@@ -79,16 +81,6 @@ export default function AssetWizardModal({
           throw new Error(`Failed to load images: ${imagesError.message}`)
         }
 
-        // Fetch amenities
-        const { data: amenities, error: amenitiesError } = await supabase
-          .from('property_amenities')
-          .select('amenity')
-          .eq('property_id', assetId)
-
-        if (amenitiesError) {
-          throw new Error(`Failed to load amenities: ${amenitiesError.message}`)
-        }
-
         // Fetch rooms
         const { data: rooms, error: roomsError } = await supabase
           .from('property_rooms')
@@ -103,6 +95,7 @@ export default function AssetWizardModal({
         const loadedFormData: PropertyFormData = {
           address_line_1: property.address_line_1 || '',
           address_line_2: property.address_line_2 || '',
+          suburb: property.suburb || '',
           city: property.city || '',
           state: property.state || '',
           postcode: property.postcode || '',
@@ -115,6 +108,7 @@ export default function AssetWizardModal({
           floors: property.floors?.toString() || '',
           property_type: (property.property_type as PropertyType) || '',
           furnished: (property.furnished as FurnishedOption) || '',
+          elevator: property.elevator ?? null,
           rent_weekly: property.rent_weekly?.toString() || '',
           rent_monthly: property.rent_monthly?.toString() || '',
           bond: property.bond?.toString() || '',
@@ -124,10 +118,35 @@ export default function AssetWizardModal({
           max_occupants: property.max_occupants?.toString() || '',
           pets_allowed: (property.pets_allowed as YesNoUnspecified) || '',
           smokers_allowed: (property.smokers_allowed as YesNoUnspecified) || '',
+          landlord_name: property.landlord_name || '',
+          landlord_contact_number: property.landlord_contact_number || '',
           title: property.title || '',
           description: property.description || '',
           internal_notes: property.internal_notes || '',
-          amenities: amenities?.map(a => a.amenity) || [],
+          amenities: {
+            air_conditioning: property.amenity_air_conditioning ?? null,
+            heating: property.amenity_heating ?? null,
+            dishwasher: property.amenity_dishwasher ?? null,
+            built_in_wardrobes: property.amenity_built_in_wardrobes ?? null,
+            floorboards: property.amenity_floorboards ?? null,
+            internal_laundry: property.amenity_internal_laundry ?? null,
+            bath: property.amenity_bath ?? null,
+            ensuite: property.amenity_ensuite ?? null,
+            pool: property.amenity_pool ?? null,
+            gym: property.amenity_gym ?? null,
+            balcony: property.amenity_balcony ?? null,
+            courtyard: property.amenity_courtyard ?? null,
+            garden: property.amenity_garden ?? null,
+            outdoor_area: property.amenity_outdoor_area ?? null,
+            secure_parking: property.amenity_secure_parking ?? null,
+            garage: property.amenity_garage ?? null,
+            carport: property.amenity_carport ?? null,
+            alarm_system: property.amenity_alarm_system ?? null,
+            intercom: property.amenity_intercom ?? null,
+            nbn: property.amenity_nbn ?? null,
+            solar_panels: property.amenity_solar_panels ?? null,
+            water_tank: property.amenity_water_tank ?? null,
+          },
           rooms: (rooms || []).map(r => ({
             id: r.id,
             room_type: r.room_type,
@@ -292,23 +311,7 @@ export default function AssetWizardModal({
       }
     }
 
-    // 4. Insert property amenities
-    if (formData.amenities.length > 0) {
-      const amenityRecords = formData.amenities.map(amenity => ({
-        property_id: property.id,
-        amenity,
-      }))
-
-      const { error: amenitiesError } = await supabase
-        .from('property_amenities')
-        .insert(amenityRecords)
-
-      if (amenitiesError) {
-        throw new Error(`Failed to save amenities: ${amenitiesError.message}`)
-      }
-    }
-
-    // 5. Insert property rooms
+    // 4. Insert property rooms
     if (formData.rooms.length > 0) {
       const roomRecords = formData.rooms.map(room => ({
         property_id: property.id,
@@ -422,8 +425,9 @@ export default function AssetWizardModal({
       ...buildPropertyData(),
       updated_by: user.id,
     }
-    // Remove created_by as we don't want to change it on update
+    // Remove created_by and status as we don't want to change them on update
     delete (propertyData as Record<string, unknown>).created_by
+    delete (propertyData as Record<string, unknown>).status
 
     const { error: propertyError } = await supabase
       .from('properties')
@@ -434,32 +438,7 @@ export default function AssetWizardModal({
       throw new Error(`Failed to update property: ${propertyError.message}`)
     }
 
-    // 3. Update amenities - delete all and re-insert
-    const { error: deleteAmenitiesError } = await supabase
-      .from('property_amenities')
-      .delete()
-      .eq('property_id', assetId)
-
-    if (deleteAmenitiesError) {
-      throw new Error(`Failed to delete amenities: ${deleteAmenitiesError.message}`)
-    }
-
-    if (formData.amenities.length > 0) {
-      const amenityRecords = formData.amenities.map(amenity => ({
-        property_id: assetId,
-        amenity,
-      }))
-
-      const { error: amenitiesError } = await supabase
-        .from('property_amenities')
-        .insert(amenityRecords)
-
-      if (amenitiesError) {
-        throw new Error(`Failed to save amenities: ${amenitiesError.message}`)
-      }
-    }
-
-    // 4. Update rooms - delete all and re-insert
+    // 3. Update rooms - delete all and re-insert
     const { error: deleteRoomsError } = await supabase
       .from('property_rooms')
       .delete()
@@ -500,6 +479,7 @@ export default function AssetWizardModal({
       // Location
       address_line_1: formData.address_line_1 || null,
       address_line_2: formData.address_line_2 || null,
+      suburb: formData.suburb || null,
       city: formData.city || null,
       state: formData.state || null,
       postcode: formData.postcode || null,
@@ -516,6 +496,7 @@ export default function AssetWizardModal({
       // Type
       property_type: formData.property_type || null,
       furnished: formData.furnished || null,
+      elevator: formData.elevator,
 
       // Pricing
       rent_weekly: formData.rent_weekly ? parseFloat(formData.rent_weekly) : null,
@@ -530,15 +511,45 @@ export default function AssetWizardModal({
       pets_allowed: formData.pets_allowed || null,
       smokers_allowed: formData.smokers_allowed || null,
 
+      // Landlord
+      landlord_name: formData.landlord_name || null,
+      landlord_contact_number: formData.landlord_contact_number || null,
+
       // Content
       title: formData.title || null,
       description: formData.description || null,
       internal_notes: formData.internal_notes || null,
+
+      // Amenities
+      amenity_air_conditioning: formData.amenities.air_conditioning,
+      amenity_heating: formData.amenities.heating,
+      amenity_dishwasher: formData.amenities.dishwasher,
+      amenity_built_in_wardrobes: formData.amenities.built_in_wardrobes,
+      amenity_floorboards: formData.amenities.floorboards,
+      amenity_internal_laundry: formData.amenities.internal_laundry,
+      amenity_bath: formData.amenities.bath,
+      amenity_ensuite: formData.amenities.ensuite,
+      amenity_pool: formData.amenities.pool,
+      amenity_gym: formData.amenities.gym,
+      amenity_balcony: formData.amenities.balcony,
+      amenity_courtyard: formData.amenities.courtyard,
+      amenity_garden: formData.amenities.garden,
+      amenity_outdoor_area: formData.amenities.outdoor_area,
+      amenity_secure_parking: formData.amenities.secure_parking,
+      amenity_garage: formData.amenities.garage,
+      amenity_carport: formData.amenities.carport,
+      amenity_alarm_system: formData.amenities.alarm_system,
+      amenity_intercom: formData.amenities.intercom,
+      amenity_nbn: formData.amenities.nbn,
+      amenity_solar_panels: formData.amenities.solar_panels,
+      amenity_water_tank: formData.amenities.water_tank,
     }
   }
 
   const renderStep = () => {
     const stepProps = { formData, updateFormData }
+    const currencyCode = activeOrg?.organisation.currency_code || 'AUD'
+    const currencySymbol = getCurrencySymbol(currencyCode)
 
     switch (currentStep) {
       case 'media':
@@ -554,24 +565,31 @@ export default function AssetWizardModal({
       case 'rooms':
         return <RoomsStep {...stepProps} />
       case 'rental_terms':
-        return <RentalTermsStep {...stepProps} />
+        return <RentalTermsStep {...stepProps} currencySymbol={currencySymbol} />
       case 'amenities':
         return <AmenitiesStep {...stepProps} />
       case 'rules':
         return <RulesStep {...stepProps} />
+      case 'landlord':
+        return <LandlordStep {...stepProps} />
       case 'review':
-        return <ReviewStep {...stepProps} existingImages={existingImages} />
+        return <ReviewStep {...stepProps} existingImages={existingImages} currencyCode={currencyCode} />
       default:
         return null
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-border bg-card shadow-lg flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end">
+      <div className="fixed inset-0 bg-black/50 animate-in fade-in duration-300" onClick={handleClose} />
+      <div className="relative z-50 w-full h-full overflow-hidden rounded-t-2xl border-t border-x border-border bg-card shadow-lg flex flex-col animate-in slide-in-from-bottom duration-300">
+        {/* Drag Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between px-6 pb-4 pt-2 border-b border-border">
           <div className="flex items-center gap-3">
             <Building2 className="h-6 w-6 text-primary" />
             <h2 className="text-xl font-semibold">

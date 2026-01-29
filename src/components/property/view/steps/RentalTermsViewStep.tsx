@@ -1,13 +1,10 @@
 import { DollarSign, Calendar, Clock } from 'lucide-react'
 import type { AssetViewData } from '../AssetViewModal'
+import { formatCurrency } from '../../../../lib/currency'
 
 interface RentalTermsViewStepProps {
   data: AssetViewData
-}
-
-function formatCurrency(value: number | null) {
-  if (value === null || value === undefined) return null
-  return `$${value.toLocaleString()}`
+  currencyCode?: string
 }
 
 function formatDate(dateString: string | null) {
@@ -19,7 +16,7 @@ function formatDate(dateString: string | null) {
   })
 }
 
-export default function RentalTermsViewStep({ data }: RentalTermsViewStepProps) {
+export default function RentalTermsViewStep({ data, currencyCode = 'AUD' }: RentalTermsViewStepProps) {
   const hasRent = data.rent_weekly || data.rent_monthly
   const hasBond = data.bond !== null
   const hasAvailability = data.available_from !== null
@@ -43,14 +40,14 @@ export default function RentalTermsViewStep({ data }: RentalTermsViewStepProps) 
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">Weekly Rent</div>
               <div className="text-xl font-semibold text-primary">
-                {formatCurrency(data.rent_weekly) || <span className="text-muted-foreground text-base font-normal italic">Not specified</span>}
+                {formatCurrency(data.rent_weekly, currencyCode) || <span className="text-muted-foreground text-base font-normal italic">Not specified</span>}
                 {data.rent_weekly && <span className="text-sm font-normal text-muted-foreground"> /week</span>}
               </div>
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">Monthly Rent</div>
               <div className="text-xl font-semibold">
-                {formatCurrency(data.rent_monthly) || <span className="text-muted-foreground text-base font-normal italic">Not specified</span>}
+                {formatCurrency(data.rent_monthly, currencyCode) || <span className="text-muted-foreground text-base font-normal italic">Not specified</span>}
                 {data.rent_monthly && <span className="text-sm font-normal text-muted-foreground"> /month</span>}
               </div>
             </div>
@@ -64,7 +61,7 @@ export default function RentalTermsViewStep({ data }: RentalTermsViewStepProps) 
       <div className="rounded-lg border border-border p-4">
         <h3 className="text-sm font-medium mb-4">Bond / Security Deposit</h3>
         {hasBond ? (
-          <div className="text-xl font-semibold">{formatCurrency(data.bond)}</div>
+          <div className="text-xl font-semibold">{formatCurrency(data.bond, currencyCode)}</div>
         ) : (
           <p className="text-sm text-muted-foreground italic">Not specified</p>
         )}

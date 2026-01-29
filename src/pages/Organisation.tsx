@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { Users, Shield, Eye, Briefcase, Crown, Settings, Pencil, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { CURRENCIES, getCurrency } from '../lib/currency'
 import Avatar from '../components/Avatar'
+import OrganisationAvatar from '../components/OrganisationAvatar'
+import OrganisationAvatarUpload from '../components/OrganisationAvatarUpload'
 import InviteManager from '../components/InviteManager'
 
 interface Member {
@@ -64,6 +67,7 @@ export default function Organisation() {
   // Editing org info state
   const [isEditingOrg, setIsEditingOrg] = useState(false)
   const [orgName, setOrgName] = useState('')
+  const [orgCurrency, setOrgCurrency] = useState('AUD')
   const [savingOrg, setSavingOrg] = useState(false)
 
   const isOwner = activeOrg?.role === 'owner'
@@ -78,12 +82,15 @@ export default function Organisation() {
     }
   }, [orgId])
 
-  // Sync org name separately when it changes (e.g., after editing)
+  // Sync org details separately when they change (e.g., after editing)
   useEffect(() => {
     if (activeOrg?.organisation.name) {
       setOrgName(activeOrg.organisation.name)
     }
-  }, [activeOrg?.organisation.name])
+    if (activeOrg?.organisation.currency_code) {
+      setOrgCurrency(activeOrg.organisation.currency_code)
+    }
+  }, [activeOrg?.organisation.name, activeOrg?.organisation.currency_code])
 
   async function fetchMembers() {
     if (!activeOrg) return
@@ -168,14 +175,17 @@ export default function Organisation() {
     setRemovingMember(null)
   }
 
-  async function saveOrgName() {
+  async function saveOrgDetails() {
     if (!activeOrg || !orgName.trim()) return
 
     setSavingOrg(true)
 
     const { error } = await supabase
       .from('organisations')
-      .update({ name: orgName.trim() })
+      .update({
+        name: orgName.trim(),
+        currency_code: orgCurrency
+      })
       .eq('id', activeOrg.organisation.id)
 
     if (!error) {
@@ -184,6 +194,19 @@ export default function Organisation() {
     }
 
     setSavingOrg(false)
+  }
+
+  async function handleAvatarUpload(url: string) {
+    if (!activeOrg) return
+
+    const { error } = await supabase
+      .from('organisations')
+      .update({ avatar_url: url })
+      .eq('id', activeOrg.organisation.id)
+
+    if (!error) {
+      await refreshMemberships()
+    }
   }
 
   if (!activeOrg) return null
@@ -224,6 +247,14 @@ export default function Organisation() {
 
         {isEditingOrg ? (
           <div className="space-y-4">
+            <div className="flex justify-center">
+              <OrganisationAvatarUpload
+                organisationId={activeOrg.organisation.id}
+                name={activeOrg.organisation.name}
+                avatarUrl={activeOrg.organisation.avatar_url}
+                onUpload={handleAvatarUpload}
+              />
+            </div>
             <div>
               <label htmlFor="orgName" className="block text-sm font-medium mb-1.5">
                 Organisation name
@@ -236,10 +267,28 @@ export default function Organisation() {
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+            <div>
+              <label htmlFor="orgCurrency" className="block text-sm font-medium mb-1.5">
+                Currency
+              </label>
+              <select
+                id="orgCurrency"
+                value={orgCurrency}
+                onChange={(e) => setOrgCurrency(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {CURRENCIES.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.code} - {currency.name} ({currency.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={() => {
                   setOrgName(activeOrg.organisation.name)
+                  setOrgCurrency(activeOrg.organisation.currency_code)
                   setIsEditingOrg(false)
                 }}
                 className="rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors"
@@ -247,7 +296,7 @@ export default function Organisation() {
                 Cancel
               </button>
               <button
-                onClick={saveOrgName}
+                onClick={saveOrgDetails}
                 disabled={savingOrg || !orgName.trim()}
                 className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
@@ -257,9 +306,36 @@ export default function Organisation() {
           </div>
         ) : (
           <div className="space-y-3">
+            <div className="flex justify-center mb-4">
+              {isOwner ? (
+                <OrganisationAvatarUpload
+                  organisationId={activeOrg.organisation.id}
+                  name={activeOrg.organisation.name}
+                  avatarUrl={activeOrg.organisation.avatar_url}
+                  onUpload={handleAvatarUpload}
+                />
+              ) : (
+                <OrganisationAvatar
+                  name={activeOrg.organisation.name}
+                  avatarUrl={activeOrg.organisation.avatar_url}
+                  size="lg"
+                />
+              )}
+            </div>
             <div>
               <p className="text-sm text-muted-foreground">Name</p>
               <p className="font-medium">{activeOrg.organisation.name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Currency</p>
+              <p className="font-medium">
+                {(() => {
+                  const currency = getCurrency(activeOrg.organisation.currency_code)
+                  return currency
+                    ? `${currency.code} - ${currency.name} (${currency.symbol})`
+                    : activeOrg.organisation.currency_code
+                })()}
+              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Your role</p>

@@ -45,34 +45,49 @@ export default function LocationStep({ formData, updateFormData }: LocationStepP
           />
         </div>
 
-        {/* City and Province/State */}
+        {/* Suburb and City */}
         <div className="grid grid-cols-2 gap-4">
           <div>
+            <label htmlFor="suburb" className="block text-sm font-medium mb-1.5">
+              Suburb
+            </label>
+            <input
+              id="suburb"
+              type="text"
+              placeholder="Suburb"
+              value={formData.suburb}
+              onChange={(e) => updateFormData({ suburb: e.target.value })}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
             <label htmlFor="city" className="block text-sm font-medium mb-1.5">
-              City / Suburb
+              City
             </label>
             <input
               id="city"
               type="text"
-              placeholder="City or suburb"
+              placeholder="City"
               value={formData.city}
               onChange={(e) => updateFormData({ city: e.target.value })}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
-          <div>
-            <label htmlFor="state" className="block text-sm font-medium mb-1.5">
-              Province / State
-            </label>
-            <input
-              id="state"
-              type="text"
-              placeholder="Province or state"
-              value={formData.state}
-              onChange={(e) => updateFormData({ state: e.target.value })}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+        </div>
+
+        {/* State */}
+        <div>
+          <label htmlFor="state" className="block text-sm font-medium mb-1.5">
+            Province / State
+          </label>
+          <input
+            id="state"
+            type="text"
+            placeholder="Province or state"
+            value={formData.state}
+            onChange={(e) => updateFormData({ state: e.target.value })}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
         </div>
 
         {/* Postcode and Country */}

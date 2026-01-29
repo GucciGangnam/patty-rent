@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { LogOut, Building2, Plus, UserPlus, Check, ChevronRight, Package, Settings } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import Avatar from './Avatar'
+import OrganisationAvatar from './OrganisationAvatar'
 
 interface UserDropdownProps {
   onCreateOrg: () => void
@@ -102,7 +103,12 @@ export default function UserDropdown({ onCreateOrg, onJoinOrg }: UserDropdownPro
               {/* Current organisation with management links */}
               {activeOrg && (
                 <div className="py-1 border-b border-border">
-                  <div className="px-4 py-2">
+                  <div className="px-4 py-2 flex items-center gap-2">
+                    <OrganisationAvatar
+                      name={activeOrg.organisation.name}
+                      avatarUrl={activeOrg.organisation.avatar_url}
+                      size="sm"
+                    />
                     <p className="text-sm font-medium">{activeOrg.organisation.name}</p>
                   </div>
                   <Link
@@ -159,6 +165,11 @@ export default function UserDropdown({ onCreateOrg, onJoinOrg }: UserDropdownPro
                     className="flex w-full items-center justify-between px-4 py-2 text-sm hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0">
+                      <OrganisationAvatar
+                        name={membership.organisation.name}
+                        avatarUrl={membership.organisation.avatar_url}
+                        size="sm"
+                      />
                       <span className="truncate">{membership.organisation.name}</span>
                       {membership.is_owner && (
                         <span className="text-xs text-muted-foreground">(Owner)</span>

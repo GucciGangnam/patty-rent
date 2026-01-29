@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Building2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
+import { useAuth } from '../../../contexts/AuthContext'
 import WizardStepIndicator from '../wizard/WizardStepIndicator'
 import MediaViewStep from './steps/MediaViewStep'
 import LocationViewStep from './steps/LocationViewStep'
@@ -8,6 +9,7 @@ import RoomsViewStep from './steps/RoomsViewStep'
 import RentalTermsViewStep from './steps/RentalTermsViewStep'
 import AmenitiesViewStep from './steps/AmenitiesViewStep'
 import RulesViewStep from './steps/RulesViewStep'
+import LandlordViewStep from './steps/LandlordViewStep'
 import DetailsViewStep from './steps/DetailsViewStep'
 import {
   WIZARD_STEPS,
@@ -34,6 +36,7 @@ export interface AssetViewData {
   // Location
   address_line_1: string | null
   address_line_2: string | null
+  suburb: string | null
   city: string | null
   state: string | null
   postcode: string | null
@@ -50,6 +53,7 @@ export interface AssetViewData {
   // Type
   property_type: string | null
   furnished: string | null
+  elevator: boolean | null
 
   // Pricing
   rent_weekly: number | null
@@ -64,10 +68,38 @@ export interface AssetViewData {
   pets_allowed: string | null
   smokers_allowed: string | null
 
+  // Landlord
+  landlord_name: string | null
+  landlord_contact_number: string | null
+
   // Content
   title: string | null
   description: string | null
   internal_notes: string | null
+
+  // Amenities (boolean columns)
+  amenity_air_conditioning: boolean | null
+  amenity_heating: boolean | null
+  amenity_dishwasher: boolean | null
+  amenity_built_in_wardrobes: boolean | null
+  amenity_floorboards: boolean | null
+  amenity_internal_laundry: boolean | null
+  amenity_bath: boolean | null
+  amenity_ensuite: boolean | null
+  amenity_pool: boolean | null
+  amenity_gym: boolean | null
+  amenity_balcony: boolean | null
+  amenity_courtyard: boolean | null
+  amenity_garden: boolean | null
+  amenity_outdoor_area: boolean | null
+  amenity_secure_parking: boolean | null
+  amenity_garage: boolean | null
+  amenity_carport: boolean | null
+  amenity_alarm_system: boolean | null
+  amenity_intercom: boolean | null
+  amenity_nbn: boolean | null
+  amenity_solar_panels: boolean | null
+  amenity_water_tank: boolean | null
 
   // Timestamps
   created_at: string
@@ -75,11 +107,11 @@ export interface AssetViewData {
 
   // Related data
   images: PropertyImage[]
-  amenities: string[]
   rooms: PropertyRoom[]
 }
 
 export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewModalProps) {
+  const { activeOrg } = useAuth()
   const [currentStep, setCurrentStep] = useState<WizardStep>('media')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -120,16 +152,6 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
         throw new Error(`Failed to fetch images: ${imagesError.message}`)
       }
 
-      // Fetch amenities
-      const { data: amenities, error: amenitiesError } = await supabase
-        .from('property_amenities')
-        .select('amenity')
-        .eq('property_id', assetId)
-
-      if (amenitiesError) {
-        throw new Error(`Failed to fetch amenities: ${amenitiesError.message}`)
-      }
-
       // Fetch rooms
       const { data: rooms, error: roomsError } = await supabase
         .from('property_rooms')
@@ -143,7 +165,6 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
       setAssetData({
         ...property,
         images: images || [],
-        amenities: amenities?.map(a => a.amenity) || [],
         rooms: rooms || [],
       })
     } catch (err) {
@@ -186,6 +207,8 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
   const renderStep = () => {
     if (!assetData) return null
 
+    const currencyCode = activeOrg?.organisation.currency_code || 'AUD'
+
     switch (currentStep) {
       case 'media':
         return <MediaViewStep data={assetData} />
@@ -194,11 +217,13 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
       case 'rooms':
         return <RoomsViewStep data={assetData} />
       case 'rental_terms':
-        return <RentalTermsViewStep data={assetData} />
+        return <RentalTermsViewStep data={assetData} currencyCode={currencyCode} />
       case 'amenities':
         return <AmenitiesViewStep data={assetData} />
       case 'rules':
         return <RulesViewStep data={assetData} />
+      case 'landlord':
+        return <LandlordViewStep data={assetData} />
       case 'review':
         return <DetailsViewStep data={assetData} />
       default:
@@ -214,11 +239,16 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg border border-border bg-card shadow-lg flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end">
+      <div className="fixed inset-0 bg-black/50 animate-in fade-in duration-300" onClick={handleClose} />
+      <div className="relative z-50 w-full h-full overflow-hidden rounded-t-2xl border-t border-x border-border bg-card shadow-lg flex flex-col animate-in slide-in-from-bottom duration-300">
+        {/* Drag Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between px-6 pb-4 pt-2 border-b border-border">
           <div className="flex items-center gap-3 min-w-0">
             <Building2 className="h-6 w-6 text-primary flex-shrink-0" />
             <h2 className="text-xl font-semibold truncate">{getAddressTitle()}</h2>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutGrid, Bed, Bath, Car, Ruler, Building, Plus, X } from 'lucide-react'
+import { LayoutGrid, Bed, Bath, Car, Ruler, Building, Plus, X, ArrowUpDown } from 'lucide-react'
 import {
   PROPERTY_TYPE_LABELS,
   FURNISHED_LABELS,
@@ -209,6 +209,26 @@ export default function RoomsStep({ formData, updateFormData }: RoomsStepProps) 
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Elevator Toggle */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={formData.elevator === true}
+                onChange={(e) => updateFormData({ elevator: e.target.checked ? true : null })}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-5 bg-gray-300 rounded-full peer-checked:bg-primary transition-colors"></div>
+              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Building has elevator</span>
+            </div>
+          </label>
         </div>
       </div>
 

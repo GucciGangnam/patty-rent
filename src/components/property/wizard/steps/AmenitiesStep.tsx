@@ -1,5 +1,5 @@
 import { Sparkles, Check } from 'lucide-react'
-import { AMENITIES, type PropertyFormData } from '../../../../types/property'
+import { AMENITIES, type PropertyFormData, type AmenityKey } from '../../../../types/property'
 
 interface AmenitiesStepProps {
   formData: PropertyFormData
@@ -13,7 +13,7 @@ const groupedAmenities = AMENITIES.reduce((acc, amenity) => {
   }
   acc[amenity.category].push(amenity)
   return acc
-}, {} as Record<string, typeof AMENITIES[number][]>)
+}, {} as Record<string, typeof AMENITIES>)
 
 const categoryLabels: Record<string, string> = {
   climate: 'Climate Control',
@@ -40,15 +40,19 @@ const categoryOrder = [
 ]
 
 export default function AmenitiesStep({ formData, updateFormData }: AmenitiesStepProps) {
-  const toggleAmenity = (amenityId: string) => {
-    const current = formData.amenities
-    const updated = current.includes(amenityId)
-      ? current.filter(id => id !== amenityId)
-      : [...current, amenityId]
-    updateFormData({ amenities: updated })
+  const toggleAmenity = (amenityId: AmenityKey) => {
+    const currentValue = formData.amenities[amenityId]
+    // Toggle: null/false -> true, true -> null
+    const newValue = currentValue === true ? null : true
+    updateFormData({
+      amenities: {
+        ...formData.amenities,
+        [amenityId]: newValue,
+      },
+    })
   }
 
-  const selectedCount = formData.amenities.length
+  const selectedCount = Object.values(formData.amenities).filter(v => v === true).length
 
   return (
     <div className="space-y-6">
@@ -76,12 +80,12 @@ export default function AmenitiesStep({ formData, updateFormData }: AmenitiesSte
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {amenities.map(amenity => {
-                  const isSelected = formData.amenities.includes(amenity.id)
+                  const isSelected = formData.amenities[amenity.id] === true
                   return (
                     <button
                       key={amenity.id}
                       type="button"
-                      onClick={() => toggleAmenity(amenity.id)}
+                      onClick={() => toggleAmenity(amenity.id as AmenityKey)}
                       className={`
                         flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-left transition-colors
                         ${isSelected

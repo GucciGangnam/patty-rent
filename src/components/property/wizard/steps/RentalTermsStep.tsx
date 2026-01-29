@@ -4,9 +4,10 @@ import { type PropertyFormData } from '../../../../types/property'
 interface RentalTermsStepProps {
   formData: PropertyFormData
   updateFormData: (updates: Partial<PropertyFormData>) => void
+  currencySymbol?: string
 }
 
-export default function RentalTermsStep({ formData, updateFormData }: RentalTermsStepProps) {
+export default function RentalTermsStep({ formData, updateFormData, currencySymbol = '$' }: RentalTermsStepProps) {
   // Auto-calculate monthly rent from weekly (weekly * 52 / 12)
   const handleWeeklyChange = (value: string) => {
     updateFormData({ rent_weekly: value })
@@ -51,7 +52,7 @@ export default function RentalTermsStep({ formData, updateFormData }: RentalTerm
                 Weekly Rent
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span>
                 <input
                   id="rent_weekly"
                   type="number"
@@ -69,7 +70,7 @@ export default function RentalTermsStep({ formData, updateFormData }: RentalTerm
                 Monthly Rent
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span>
                 <input
                   id="rent_monthly"
                   type="number"
@@ -92,7 +93,7 @@ export default function RentalTermsStep({ formData, updateFormData }: RentalTerm
         <div className="rounded-lg border border-border p-4">
           <h3 className="text-sm font-medium mb-4">Bond / Security Deposit</h3>
           <div className="relative w-48">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span>
             <input
               id="bond"
               type="number"

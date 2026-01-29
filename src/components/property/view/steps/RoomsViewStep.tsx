@@ -1,4 +1,4 @@
-import { LayoutGrid, Bed, Bath, Car, Ruler, Building } from 'lucide-react'
+import { LayoutGrid, Bed, Bath, Car, Ruler, Building, ArrowUpDown } from 'lucide-react'
 import {
   PROPERTY_TYPE_LABELS,
   FURNISHED_LABELS,
@@ -32,7 +32,7 @@ function StatCard({
 
 export default function RoomsViewStep({ data }: RoomsViewStepProps) {
   const hasPropertySize = data.floor_area_sqm || data.land_area_sqm || data.floors
-  const hasPropertyType = data.property_type || data.furnished
+  const hasPropertyType = data.property_type || data.furnished || data.elevator !== null
   const hasRooms = data.rooms.length > 0
 
   return (
@@ -91,23 +91,33 @@ export default function RoomsViewStep({ data }: RoomsViewStepProps) {
           Property Type
         </h3>
         {hasPropertyType ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">Type</div>
-              <div className="text-sm">
-                {data.property_type
-                  ? PROPERTY_TYPE_LABELS[data.property_type as PropertyType] || data.property_type
-                  : <span className="text-muted-foreground italic">Not specified</span>}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-1">Type</div>
+                <div className="text-sm">
+                  {data.property_type
+                    ? PROPERTY_TYPE_LABELS[data.property_type as PropertyType] || data.property_type
+                    : <span className="text-muted-foreground italic">Not specified</span>}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-1">Furnished</div>
+                <div className="text-sm">
+                  {data.furnished
+                    ? FURNISHED_LABELS[data.furnished as FurnishedOption] || data.furnished
+                    : <span className="text-muted-foreground italic">Not specified</span>}
+                </div>
               </div>
             </div>
-            <div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">Furnished</div>
-              <div className="text-sm">
-                {data.furnished
-                  ? FURNISHED_LABELS[data.furnished as FurnishedOption] || data.furnished
-                  : <span className="text-muted-foreground italic">Not specified</span>}
+            {data.elevator !== null && (
+              <div className="flex items-center gap-2 pt-2 border-t border-border">
+                <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  {data.elevator ? 'Building has elevator' : 'No elevator'}
+                </span>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground italic">No property type information specified</p>

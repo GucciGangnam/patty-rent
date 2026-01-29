@@ -15,7 +15,7 @@ function DisplayField({ label, value }: { label: string; value: string | null })
 }
 
 export default function LocationViewStep({ data }: LocationViewStepProps) {
-  const hasLocation = data.address_line_1 || data.city || data.state || data.postcode || data.country
+  const hasLocation = data.address_line_1 || data.suburb || data.city || data.state || data.postcode || data.country
 
   return (
     <div className="space-y-6">
@@ -35,14 +35,16 @@ export default function LocationViewStep({ data }: LocationViewStepProps) {
           <DisplayField label="Address Line 2" value={data.address_line_2} />
 
           <div className="grid grid-cols-2 gap-4">
-            <DisplayField label="City / Suburb" value={data.city} />
-            <DisplayField label="Province / State" value={data.state} />
+            <DisplayField label="Suburb" value={data.suburb} />
+            <DisplayField label="City" value={data.city} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            <DisplayField label="Province / State" value={data.state} />
             <DisplayField label="Postcode / ZIP" value={data.postcode} />
-            <DisplayField label="Country" value={data.country} />
           </div>
+
+          <DisplayField label="Country" value={data.country} />
 
           {/* Full Address Summary */}
           {hasLocation && (
@@ -52,6 +54,7 @@ export default function LocationViewStep({ data }: LocationViewStepProps) {
                 {[
                   data.address_line_1,
                   data.address_line_2,
+                  data.suburb,
                   data.city,
                   data.state,
                   data.postcode,

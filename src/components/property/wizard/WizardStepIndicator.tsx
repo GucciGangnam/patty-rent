@@ -9,6 +9,7 @@ interface WizardStepIndicatorProps {
 
 export default function WizardStepIndicator({ currentStep, onStepClick, allClickable }: WizardStepIndicatorProps) {
   const currentIndex = WIZARD_STEPS.findIndex(s => s.id === currentStep)
+  const currentStepLabel = WIZARD_STEPS[currentIndex]?.label ?? ''
 
   return (
     <nav aria-label="Progress" className="mb-6">
@@ -66,9 +67,10 @@ export default function WizardStepIndicator({ currentStep, onStepClick, allClick
                     index + 1
                   )}
                 </button>
+                {/* Labels hidden on mobile, visible on md screens and up */}
                 <span
                   className={`
-                    mt-2 text-xs font-medium text-center
+                    mt-2 text-xs font-medium text-center hidden md:block
                     ${isCurrent ? 'text-foreground' : 'text-muted-foreground'}
                   `}
                 >
@@ -79,6 +81,12 @@ export default function WizardStepIndicator({ currentStep, onStepClick, allClick
           )
         })}
       </ol>
+      {/* Current step label shown on mobile only */}
+      <div className="mt-3 text-center md:hidden">
+        <span className="text-sm font-medium text-foreground">
+          Step {currentIndex + 1}: {currentStepLabel}
+        </span>
+      </div>
     </nav>
   )
 }
