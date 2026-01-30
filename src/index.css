@@ -120,4 +120,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Prevent iOS Safari zoom on input focus - requires 16px minimum */
+  @media screen and (max-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
 }
