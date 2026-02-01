@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Building2, Search, Users, Shield, CheckCircle } from 'lucide-react'
+import InstallAppButton from '../components/InstallAppButton'
 
 export default function Landing() {
   return (
@@ -13,6 +14,7 @@ export default function Landing() {
               <span className="text-xl font-bold">PattyRent</span>
             </div>
             <nav className="flex items-center gap-4">
+              <InstallAppButton />
               <Link
                 to="/auth?mode=signin"
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
