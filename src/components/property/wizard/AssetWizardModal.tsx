@@ -3,6 +3,7 @@ import { X, Building2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { getCurrencySymbol } from '../../../lib/currency'
+import { useBottomSheet } from '../../../hooks/useBottomSheet'
 import WizardStepIndicator from './WizardStepIndicator'
 import MediaStep from './steps/MediaStep'
 import LocationStep from './steps/LocationStep'
@@ -48,6 +49,21 @@ export default function AssetWizardModal({
   const [error, setError] = useState<string | null>(null)
 
   const isEditMode = mode === 'edit' && assetId
+
+  const { sheetRef, handleRef, dragOffset, isDragging } = useBottomSheet({
+    isOpen,
+    onClose,
+  })
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData(INITIAL_FORM_DATA)
+      setExistingImages([])
+      setCurrentStep('media')
+      setError(null)
+    }
+  }, [isOpen])
 
   // Fetch existing asset data when in edit mode
   useEffect(() => {
@@ -221,10 +237,6 @@ export default function AssetWizardModal({
   }
 
   const handleClose = () => {
-    setFormData(INITIAL_FORM_DATA)
-    setExistingImages([])
-    setCurrentStep('media')
-    setError(null)
     onClose()
   }
 
@@ -582,9 +594,19 @@ export default function AssetWizardModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end">
       <div className="fixed inset-0 bg-black/50 animate-in fade-in duration-300" onClick={handleClose} />
-      <div className="relative z-50 w-full h-full overflow-hidden rounded-t-2xl border-t border-x border-border bg-card shadow-lg flex flex-col animate-in slide-in-from-bottom duration-300">
+      <div
+        ref={sheetRef}
+        className="relative z-50 w-full h-full overflow-hidden rounded-t-2xl border-t border-x border-border bg-card shadow-lg flex flex-col animate-in slide-in-from-bottom duration-300"
+        style={{
+          transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+        }}
+      >
         {/* Drag Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div
+          ref={handleRef}
+          className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none"
+        >
           <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
         </div>
 

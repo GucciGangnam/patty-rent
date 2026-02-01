@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Building2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
+import { useBottomSheet } from '../../../hooks/useBottomSheet'
 import WizardStepIndicator from '../wizard/WizardStepIndicator'
 import MediaViewStep from './steps/MediaViewStep'
 import LocationViewStep from './steps/LocationViewStep'
@@ -117,6 +118,20 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
   const [error, setError] = useState<string | null>(null)
   const [assetData, setAssetData] = useState<AssetViewData | null>(null)
 
+  const { sheetRef, handleRef, dragOffset, isDragging } = useBottomSheet({
+    isOpen,
+    onClose,
+  })
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setCurrentStep('media')
+      setAssetData(null)
+      setError(null)
+    }
+  }, [isOpen])
+
   useEffect(() => {
     if (isOpen && assetId) {
       fetchAssetData()
@@ -198,9 +213,6 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
   }
 
   const handleClose = () => {
-    setCurrentStep('media')
-    setAssetData(null)
-    setError(null)
     onClose()
   }
 
@@ -241,9 +253,19 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
   return (
     <div className="fixed inset-0 z-50 flex items-end">
       <div className="fixed inset-0 bg-black/50 animate-in fade-in duration-300" onClick={handleClose} />
-      <div className="relative z-50 w-full h-full overflow-hidden rounded-t-2xl border-t border-x border-border bg-card shadow-lg flex flex-col animate-in slide-in-from-bottom duration-300">
+      <div
+        ref={sheetRef}
+        className="relative z-50 w-full h-full overflow-hidden rounded-t-2xl border-t border-x border-border bg-card shadow-lg flex flex-col animate-in slide-in-from-bottom duration-300"
+        style={{
+          transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+        }}
+      >
         {/* Drag Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div
+          ref={handleRef}
+          className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none"
+        >
           <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
         </div>
 
