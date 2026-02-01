@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <rect width="180" height="180" fill="#1a1a1a" rx="22"/>
+  <g transform="translate(30, 30)" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 120V30a15 15 0 0 1 15-15h60a15 15 0 0 1 15 15v90"/>
+    <path d="M60 120V75h45v45"/>
+    <path d="M15 120h105"/>
+    <path d="M45 45h15"/>
+    <path d="M45 75h15"/>
+    <path d="M75 45h15"/>
+  </g>
+</svg>

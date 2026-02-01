@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSearch } from '../contexts/SearchContext'
+import InstallAppButton from './InstallAppButton'
 import NotificationBell from './NotificationBell'
 import UserDropdown from './UserDropdown'
 import CreateOrgModal from './CreateOrgModal'
@@ -44,6 +45,7 @@ export default function AppHeader() {
                   {activeOrg.organisation.name}
                 </span>
               )}
+              <InstallAppButton />
               <NotificationBell />
               <UserDropdown
                 onCreateOrg={() => setShowCreateModal(true)}
