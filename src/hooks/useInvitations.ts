@@ -29,6 +29,7 @@ export function useInvitations() {
         created_at,
         organisation:organisations(name)
       `)
+      .eq('email', user.email)
       .eq('status', 'pending')
 
     if (error) {

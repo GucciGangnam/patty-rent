@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        loadUserData(session.user.id)
+        loadUserData(session.user.id, session.user.email)
       } else {
         setLoading(false)
         setInitialLoadComplete(true)
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[Auth] Signup in progress, skipping loadUserData')
           } else {
             // Load user data on sign in (handles login and email confirmation)
-            loadUserData(session.user.id)
+            loadUserData(session.user.id, session.user.email)
           }
         }
         // TOKEN_REFRESHED: no need to reload data
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function loadUserData(userId: string) {
+  async function loadUserData(userId: string, userEmail?: string) {
     console.log('[Auth] loadUserData called, setting loading=true')
     setLoading(true)
 
@@ -153,10 +153,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select('organisation_id')
           .eq('user_id', userId)
           .single(),
-        supabase
-          .from('org_invitations')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'pending')
+        userEmail
+          ? supabase
+              .from('org_invitations')
+              .select('id', { count: 'exact', head: true })
+              .eq('email', userEmail)
+              .eq('status', 'pending')
+          : Promise.resolve({ count: 0 })
       ])
 
       if (profileResult.data) {
@@ -319,6 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { count } = await supabase
       .from('org_invitations')
       .select('id', { count: 'exact', head: true })
+      .eq('email', user.email)
       .eq('status', 'pending')
 
     setPendingInvitationCount(count ?? 0)
@@ -327,7 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refreshAll(userId?: string) {
     const id = userId || user?.id
     if (id) {
-      await loadUserData(id)
+      await loadUserData(id, user?.email ?? undefined)
     }
   }
 
