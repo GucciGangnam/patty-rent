@@ -240,8 +240,6 @@ export default function Assets() {
       handleToggleStatus(assetId)
     } else if (action === 'Delete') {
       setDeleteAssetId(assetId)
-    } else {
-      alert(`"${action}" feature coming soon!`)
     }
   }
 

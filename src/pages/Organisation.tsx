@@ -63,6 +63,8 @@ export default function Organisation() {
   const [removingMember, setRemovingMember] = useState<string | null>(null)
   const [pendingRoleChanges, setPendingRoleChanges] = useState<Record<string, 'manager' | 'agent' | 'viewer'>>({})
   const [savingRoleChanges, setSavingRoleChanges] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
 
   // Editing org info state
   const [isEditingOrg, setIsEditingOrg] = useState(false)
@@ -207,6 +209,28 @@ export default function Organisation() {
     if (!error) {
       await refreshMemberships()
     }
+  }
+
+  async function leaveOrganisation() {
+    if (!activeOrg || !user) return
+
+    setIsLeaving(true)
+
+    const { error } = await supabase
+      .from('org_memberships')
+      .delete()
+      .eq('organisation_id', activeOrg.organisation.id)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Error leaving organisation:', error)
+      alert('Failed to leave organisation. Please try again.')
+    } else {
+      await refreshMemberships()
+    }
+
+    setIsLeaving(false)
+    setConfirmLeave(false)
   }
 
   if (!activeOrg) return null
@@ -469,13 +493,33 @@ export default function Organisation() {
           <p className="text-sm text-muted-foreground mb-4">
             Once you leave this organisation, you will lose access to all its assets and data.
           </p>
-          <button
-            onClick={() => alert('Feature coming soon - We need to determine what implications this will have later on')}
-            className="flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Leave Organisation
-          </button>
+          {confirmLeave ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-destructive font-medium">Are you sure?</span>
+              <button
+                onClick={leaveOrganisation}
+                disabled={isLeaving}
+                className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50"
+              >
+                {isLeaving ? 'Leaving...' : 'Yes, leave'}
+              </button>
+              <button
+                onClick={() => setConfirmLeave(false)}
+                disabled={isLeaving}
+                className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              Leave Organisation
+            </button>
+          )}
         </section>
       )}
     </div>
