@@ -120,7 +120,7 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [assetData, setAssetData] = useState<AssetViewData | null>(null)
-  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'loading' | 'copied' | 'shared'>('idle')
 
   const { sheetRef, handleRef, dragOffset, isDragging } = useBottomSheet({
     isOpen,
@@ -241,34 +241,81 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
     return lines.join('\n')
   }
 
+  const getImageUrl = (storagePath: string) => {
+    const { data: urlData } = supabase.storage.from('property-images').getPublicUrl(storagePath)
+    return urlData.publicUrl
+  }
+
+  const fetchImagesAsFiles = async (): Promise<File[]> => {
+    if (!assetData?.images.length) return []
+
+    const files: File[] = []
+
+    // Sort images with primary first
+    const sortedImages = [...assetData.images].sort((a, b) => {
+      if (a.is_primary && !b.is_primary) return -1
+      if (!a.is_primary && b.is_primary) return 1
+      return a.display_order - b.display_order
+    })
+
+    for (const image of sortedImages) {
+      try {
+        const url = getImageUrl(image.storage_path)
+        const response = await fetch(url)
+        const blob = await response.blob()
+
+        // Extract filename from storage path
+        const filename = image.storage_path.split('/').pop() || `property-image-${image.id}.jpg`
+        const file = new File([blob], filename, { type: blob.type || 'image/jpeg' })
+        files.push(file)
+      } catch (err) {
+        console.error('Failed to fetch image:', err)
+      }
+    }
+
+    return files
+  }
+
   const handleShare = async () => {
     const message = buildShareMessage()
     if (!message) return
 
-    // Try Web Share API first (works great on mobile)
+    setShareStatus('loading')
+
+    // Try Web Share API with files first (works great on mobile)
     if (navigator.share) {
       try {
-        await navigator.share({
-          text: message,
-        })
+        // Fetch images and check if we can share them
+        const imageFiles = await fetchImagesAsFiles()
+
+        const shareData: ShareData = { text: message }
+
+        // Check if device supports sharing files
+        if (imageFiles.length > 0 && navigator.canShare?.({ files: imageFiles })) {
+          shareData.files = imageFiles
+        }
+
+        await navigator.share(shareData)
         setShareStatus('shared')
         setTimeout(() => setShareStatus('idle'), 2000)
         return
       } catch (err) {
         // User cancelled or share failed, fall back to clipboard
         if ((err as Error).name === 'AbortError') {
+          setShareStatus('idle')
           return // User cancelled, don't show any feedback
         }
       }
     }
 
-    // Fallback to clipboard
+    // Fallback to clipboard (text only)
     try {
       await navigator.clipboard.writeText(message)
       setShareStatus('copied')
       setTimeout(() => setShareStatus('idle'), 2000)
     } catch (err) {
       console.error('Failed to copy to clipboard:', err)
+      setShareStatus('idle')
     }
   }
 
@@ -405,13 +452,18 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
             <button
               type="button"
               onClick={handleShare}
-              disabled={loading || !assetData}
+              disabled={loading || !assetData || shareStatus === 'loading'}
               className="flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {shareStatus === 'idle' ? (
                 <>
                   <Share2 className="h-4 w-4" />
                   Share
+                </>
+              ) : shareStatus === 'loading' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
                 </>
               ) : (
                 <>
