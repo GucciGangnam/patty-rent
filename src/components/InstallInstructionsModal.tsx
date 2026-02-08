@@ -7,7 +7,7 @@ interface InstallInstructionsModalProps {
 }
 
 export default function InstallInstructionsModal({ isOpen, onClose }: InstallInstructionsModalProps) {
-  const { device, browser } = useDeviceDetect()
+  const { device, browser, os } = useDeviceDetect()
 
   if (!isOpen) return null
 
@@ -123,6 +123,36 @@ export default function InstallInstructionsModal({ isOpen, onClose }: InstallIns
       )
     }
 
+    // macOS Safari - Add to Dock
+    if (device === 'desktop' && os === 'macos' && browser === 'safari') {
+      return (
+        <div className="space-y-4">
+          <h3 className="font-medium">Add to Dock on Mac</h3>
+          <ol className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">1</span>
+              <span className="pt-0.5">
+                Click <strong>File</strong> in the menu bar at the top of your screen
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">2</span>
+              <span className="pt-0.5">
+                Select <strong>"Add to Dock"</strong>
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">3</span>
+              <span className="pt-0.5">PattyRent will appear in your Dock as a standalone app</span>
+            </li>
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            The app will open without browser tabs or URL bar, just like a native app.
+          </p>
+        </div>
+      )
+    }
+
     // Desktop Chrome/Edge
     if (device === 'desktop' && (browser === 'chrome' || browser === 'edge')) {
       return (
@@ -153,6 +183,37 @@ export default function InstallInstructionsModal({ isOpen, onClose }: InstallIns
       )
     }
 
+    // macOS with unsupported browser
+    if (device === 'desktop' && os === 'macos') {
+      return (
+        <div className="space-y-4">
+          <h3 className="font-medium">Add to Dock on Mac</h3>
+          <p className="text-sm text-muted-foreground">
+            To add PattyRent to your Dock, open this page in <strong>Safari</strong> and use File → Add to Dock.
+          </p>
+          <ol className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">1</span>
+              <span className="pt-0.5">Copy the URL from the address bar</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">2</span>
+              <span className="pt-0.5">Open Safari and paste the URL</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">3</span>
+              <span className="pt-0.5">
+                Click <strong>File</strong> → <strong>Add to Dock</strong>
+              </span>
+            </li>
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            Alternatively, you can use Chrome or Edge to install as a desktop app.
+          </p>
+        </div>
+      )
+    }
+
     // Default/other browsers
     return (
       <div className="space-y-4">
@@ -163,7 +224,7 @@ export default function InstallInstructionsModal({ isOpen, onClose }: InstallIns
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            <strong>Safari</strong> on iPhone/iPad
+            <strong>Safari</strong> on iPhone/iPad or Mac
           </li>
           <li className="flex items-center gap-2">
             <Plus className="h-4 w-4" />

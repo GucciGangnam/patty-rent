@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Smartphone } from 'lucide-react'
+import { Smartphone, AppWindowMac } from 'lucide-react'
 import { useDeviceDetect } from '../hooks/useDeviceDetect'
 import InstallInstructionsModal from './InstallInstructionsModal'
 
 export default function InstallAppButton() {
   const [showModal, setShowModal] = useState(false)
   const [isShaking, setIsShaking] = useState(false)
-  const { isStandalone } = useDeviceDetect()
+  const { isStandalone, device } = useDeviceDetect()
+
+  const Icon = device === 'desktop' ? AppWindowMac : Smartphone
 
   // Shake animation every 8 seconds to draw attention
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function InstallAppButton() {
         title="Install app"
         aria-label="Install app"
       >
-        <Smartphone className="h-5 w-5" />
+        <Icon className="h-5 w-5" />
       </button>
 
       <InstallInstructionsModal
