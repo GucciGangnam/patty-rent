@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { X, Building2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { X, Building2, ChevronLeft, ChevronRight, Loader2, Share2, Check } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useBottomSheet } from '../../../hooks/useBottomSheet'
+import { formatCurrency } from '../../../lib/currency'
 import WizardStepIndicator from '../wizard/WizardStepIndicator'
 import MediaViewStep from './steps/MediaViewStep'
 import LocationViewStep from './steps/LocationViewStep'
@@ -14,9 +15,11 @@ import LandlordViewStep from './steps/LandlordViewStep'
 import DetailsViewStep from './steps/DetailsViewStep'
 import {
   WIZARD_STEPS,
+  PROPERTY_TYPE_LABELS,
   type WizardStep,
   type PropertyImage,
   type PropertyRoom,
+  type PropertyType,
 } from '../../../types/property'
 
 // Remap the review step to details for viewing
@@ -117,6 +120,7 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [assetData, setAssetData] = useState<AssetViewData | null>(null)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared'>('idle')
 
   const { sheetRef, handleRef, dragOffset, isDragging } = useBottomSheet({
     isOpen,
@@ -129,6 +133,7 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
       setCurrentStep('media')
       setAssetData(null)
       setError(null)
+      setShareStatus('idle')
     }
   }, [isOpen])
 
@@ -187,6 +192,83 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const buildShareMessage = (): string => {
+    if (!assetData) return ''
+
+    const currencyCode = activeOrg?.organisation.currency_code || 'AUD'
+    const lines: string[] = []
+
+    // Property type and location line
+    const bedroomCount = assetData.bedrooms ?? 0
+    const propertyType = assetData.property_type
+      ? PROPERTY_TYPE_LABELS[assetData.property_type as PropertyType] || assetData.property_type
+      : 'Property'
+    const locationParts = [assetData.suburb, assetData.city].filter(Boolean)
+    const location = locationParts.length > 0 ? locationParts.join(', ') : ''
+
+    if (bedroomCount > 0 && location) {
+      lines.push(`🏠 ${bedroomCount}BR ${propertyType} in ${location}`)
+    } else if (location) {
+      lines.push(`🏠 ${propertyType} in ${location}`)
+    } else {
+      lines.push(`🏠 ${propertyType}`)
+    }
+
+    // Price line
+    const monthlyRent = formatCurrency(assetData.rent_monthly, currencyCode)
+    if (monthlyRent) {
+      lines.push(`💰 ${monthlyRent}/month`)
+    }
+
+    // Beds, baths, parking line
+    const specs: string[] = []
+    if (assetData.bedrooms) specs.push(`${assetData.bedrooms} bed${assetData.bedrooms > 1 ? 's' : ''}`)
+    if (assetData.bathrooms) specs.push(`${assetData.bathrooms} bath${assetData.bathrooms > 1 ? 's' : ''}`)
+    if (assetData.parking_spaces) specs.push(`${assetData.parking_spaces} parking`)
+    if (specs.length > 0) {
+      lines.push(`🛏️ ${specs.join(' • ')}`)
+    }
+
+    // Address line
+    const addressParts = [assetData.address_line_1, assetData.suburb].filter(Boolean)
+    if (addressParts.length > 0) {
+      lines.push(`📍 ${addressParts.join(', ')}`)
+    }
+
+    return lines.join('\n')
+  }
+
+  const handleShare = async () => {
+    const message = buildShareMessage()
+    if (!message) return
+
+    // Try Web Share API first (works great on mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          text: message,
+        })
+        setShareStatus('shared')
+        setTimeout(() => setShareStatus('idle'), 2000)
+        return
+      } catch (err) {
+        // User cancelled or share failed, fall back to clipboard
+        if ((err as Error).name === 'AbortError') {
+          return // User cancelled, don't show any feedback
+        }
+      }
+    }
+
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(message)
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 2000)
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
     }
   }
 
@@ -320,6 +402,25 @@ export default function AssetViewModal({ isOpen, assetId, onClose }: AssetViewMo
           </button>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={loading || !assetData}
+              className="flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {shareStatus === 'idle' ? (
+                <>
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 text-green-600" />
+                  {shareStatus === 'copied' ? 'Copied!' : 'Shared!'}
+                </>
+              )}
+            </button>
+
             {isLastStep ? (
               <button
                 type="button"
