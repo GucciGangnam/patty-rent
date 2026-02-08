@@ -245,9 +245,35 @@ export default function Assets() {
     }
   }
 
-  const handleConfirmDelete = () => {
-    alert('Delete function coming soon - We need to work out the implications')
-    setDeleteAssetId(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleConfirmDelete = async () => {
+    if (!deleteAssetId) return
+
+    setIsDeleting(true)
+    try {
+      // Delete the property - the database trigger will handle storage cleanup
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', deleteAssetId)
+
+      if (error) {
+        console.error('Error deleting property:', error)
+        alert('Failed to delete property. Please try again.')
+        return
+      }
+
+      // Remove from local state
+      setAssets(prev => prev.filter(a => a.id !== deleteAssetId))
+      setTotalCount(prev => prev - 1)
+      setDeleteAssetId(null)
+    } catch (err) {
+      console.error('Error deleting property:', err)
+      alert('Failed to delete property. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const handleEditSuccess = () => {
@@ -695,7 +721,7 @@ export default function Assets() {
       {/* Delete Confirmation Dialog */}
       {deleteAssetId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setDeleteAssetId(null)} />
+          <div className="fixed inset-0 bg-black/50" onClick={() => !isDeleting && setDeleteAssetId(null)} />
           <div className="relative z-50 w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-lg">
             <h2 className="text-lg font-semibold mb-2">Delete Asset</h2>
             <p className="text-sm text-muted-foreground mb-6">
@@ -705,16 +731,18 @@ export default function Assets() {
               <button
                 type="button"
                 onClick={() => setDeleteAssetId(null)}
-                className="flex-1 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                disabled={isDeleting}
+                className="flex-1 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                disabled={isDeleting}
+                className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50"
               >
-                Delete
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
